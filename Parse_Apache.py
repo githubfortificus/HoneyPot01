@@ -1,5 +1,4 @@
 def main():
-    
     file = open("../Apache/Dec.29.txt", "r")
     ATTACKS = 0
     
