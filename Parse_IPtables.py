@@ -16,12 +16,12 @@ def main():
     Other_counter = 0
 
     # File Open here
-    Input_file = open("../RAW/test.log", "r")
-    LOG = open("../Log/Parse_syslog.log", "")
-    Syslog_processed = open("../Apache_processed/syslog.out", "") 
-    Apache_Processed = open("../Syslog_processed/apache.out", "")  
-    Error = open("../Log/error.log", "")
-    Summary = open("../Log/Summary.log", "")
+    Input_file = open("../RAW/test.log", "r")   
+    Syslog_processed = open("../Apache_Processed/syslog.out", "a+") 
+    Apache_Processed = open("../Syslog_Processed/apache.out", "a+")  
+    LOG = open("../Log/Parse_syslog.log", "a+")
+    Error = open("../Log/Parse_IPtables_error.log", "a+")
+    Summary = open("../Log/Parse_IPtables_Summary.log", "a+")
 
     # Main processing here
     for line in Input_file:
