@@ -5,15 +5,27 @@ def main():
     import MySQLdb
     import datetime
 
-    # Database connection here
-    # mysqldb = MySQLdb.connect (host="172.16.100.129", port=3306, user="syslog", passwd="sys10g01!", db="Syslog")
-    # mysqldb_cursor = mysqldb.cursor()
-
     # Global variables here
+    Total_counter = 0
     TCP_counter = 0
     UDP_counter = 0
     ICMP_counter = 0
     Other_counter = 0
+    Port_analysis = {}
+
+    # Database connection here
+    # mysqldb = MySQLdb.connect (host="172.16.100.129", port=3306, user="syslog", passwd="sys10g01!", db="Syslog")
+    # mysqldb_cursor = mysqldb.cursor()
+
+    # Functions here
+    def Port_function (F_Protocol, F_Port):
+        print "The information passed is: ", F_Protocol, F_Port
+
+    def DB_DF_present ():
+        print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
+
+    def DB_DF_not_present ():
+        print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
     # File Open here
     Input_file = open("../RAW/data.log", "r")   
@@ -25,6 +37,7 @@ def main():
 
     # Main processing here
     for line in Input_file:
+        Total_counter += 1
         text = line.split()
         # Processing for TCP connections here
         if "TCP" in line:
@@ -136,6 +149,7 @@ def main():
 
                     print "No protocol detected...  Problem found"
 
+    print "Total number of Connections: ", Total_counter
     print "TCP Connections: ", TCP_counter
     print "UDP Connections: ", UDP_counter
     print "ICMP Connections: ", ICMP_counter
