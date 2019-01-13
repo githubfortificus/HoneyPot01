@@ -16,7 +16,7 @@ def main():
     Other_counter = 0
 
     # File Open here
-    Input_file = open("../RAW/test.log", "r")   
+    Input_file = open("../RAW/data.log", "r")   
     Syslog_processed = open("../Apache_Processed/syslog.out", "a+") 
     Apache_Processed = open("../Syslog_Processed/apache.out", "a+")  
     LOG = open("../Log/Parse_syslog.log", "a+")
@@ -50,7 +50,7 @@ def main():
                 Priority = "0"
                 Notes = ""
 
-                print PROTOCOL SOURCEIP SOURCEPORT DESTINATIONIP DESTINATIONPORT
+                print PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
             # TCP - DF
             else:
@@ -73,7 +73,7 @@ def main():
                 Priority = "0"
                 Notes = ""
         
-                print PROTOCOL SOURCEIP SOURCEPORT DESTINATIONIP DESTINATIONPORT
+                print PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
         else:
             # Processing for UDP connections here
             if "UDP" in line:    
@@ -92,7 +92,7 @@ def main():
                     FLAGS = text[21:]
                     FLAGS_INS = " ".join(FLAGS)
 
-                    print PROTOCOL SOURCEIP SOURCEPORT DESTINATIONIP DESTINATIONPORT
+                    print PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
                     
                 # UDP - DF
                 else:
@@ -108,7 +108,7 @@ def main():
                     FLAGS = text[22:]
                     FLAGS_INS = " ".join(FLAGS)
 
-                    print PROTOCOL SOURCEIP SOURCEPORT DESTINATIONIP DESTINATIONPORT
+                    print PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
             else:
                 # ICMP
@@ -128,7 +128,7 @@ def main():
                     FLAGS = text[22:]
                     FLAGS_INS = " ".join(FLAGS)
 
-                    print PROTOCOL SOURCEIP  DESTINATIONIP ICMPTYPE ICMPCODE
+                    print PROTOCOL, SOURCEIP,  DESTINATIONIP, ICMPTYPE, ICMPCODE
                 
                 # Protocol not detected here
                 else:
@@ -142,7 +142,7 @@ def main():
     print "OTHER Connections: ", Other_counter
 
     # Close files and database connections here
-    Inpiut_file.close()
+    Input_file.close()
     LOG.close()
     Syslog_processed.close()
     Apache_Processed.close()
