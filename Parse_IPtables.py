@@ -11,7 +11,8 @@ def main():
     UDP_counter = 0
     ICMP_counter = 0
     Other_counter = 0
-    Port_analysis = {}
+    TCP_Ports = {}
+    UDP_Ports = {}
 
     # Database connection here
     # mysqldb = MySQLdb.connect (host="172.16.100.129", port=3306, user="syslog", passwd="sys10g01!", db="Syslog")
@@ -19,6 +20,12 @@ def main():
 
     # Functions here
     def Port_function (F_Protocol, F_Port):
+        Counter = TCP_Ports.get(F_Port, 0)
+        Counter += 1
+        # print "The counter for port - is: ", F_Port, Counter
+        TCP_Ports.update({F_Port: Counter})
+        print TCP_Ports[F_Port]
+        # print "The value for TCP_Ports[F_Port] is: ", TCP_Ports[F_Port]
         print "The information passed is: ", F_Protocol, F_Port
 
     def DB_DF_present ():
@@ -62,6 +69,8 @@ def main():
                 GeoIP = ""
                 Priority = "0"
                 Notes = ""
+
+                Port_function (PROTOCOL, DESTINATIONPORT)
 
                 print PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
