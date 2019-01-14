@@ -1,5 +1,4 @@
 def main():
-    # Please remember to change your database username and password as this is now Internet facing
 
     # Modules here
     import MySQLdb
@@ -13,25 +12,78 @@ def main():
     Other_counter = 0
     TCP_Ports = {}
     UDP_Ports = {}
+    IP_Addresses = {}
 
     # Database connection here
+    # Please remember to change your database username and password as this is now Internet facing
     # mysqldb = MySQLdb.connect (host="172.16.100.129", port=3306, user="syslog", passwd="sys10g01!", db="Syslog")
     # mysqldb_cursor = mysqldb.cursor()
 
     # Functions here
-    def Port_function (F_Protocol, F_Port):
+    def TCP_Port_function (F_Protocol, F_Port):
         Counter = TCP_Ports.get(F_Port, 0)
         Counter += 1
-        # print "The counter for port - is: ", F_Port, Counter
         TCP_Ports.update({F_Port: Counter})
-        print TCP_Ports[F_Port]
-        # print "The value for TCP_Ports[F_Port] is: ", TCP_Ports[F_Port]
-        print "The information passed is: ", F_Protocol, F_Port
+        # print TCP_Ports[F_Port]
+        # print "The information passed is: ", F_Protocol, F_Port
+
+    def IP_Add_function (F_IP):
+        Counter = IP_Addresses.get(F_IP, 0)
+        Counter += 1
+        IP_Addresses.update({F_IP: Counter})
+        # print "Counter for", F_IP, "is:", IP_Addresses[F_IP]
+
+    def Obtain_Domain (F_IP):
+        print "We would get the domain for IP", F_IP, "here"
 
     def DB_DF_present ():
+        DATE = datetime.date(2018, 12, int(text[1]))
+        TIMESTR = text[2].replace(':',' ').split()
+        HOUR = datetime.time(int(TIMESTR[0]), int(TIMESTR[1]), int(TIMESTR[2]))
+        ACTION = text[7].replace(':','')
+        PROTOCOL = text[19].replace('PROTO=','')
+        SOURCEIP = text[11].replace('SRC=','')
+        SOURCEPORT = text[20].replace('SPT=','')
+        DESTINATIONIP = text[12].replace('DST=','')
+        DESTINATIONPORT = text[21].replace('DPT=','')
+        FLAGS = text[24:]
+        FLAGS_INS = " ".join(FLAGS)
+        ICMPTYPE = 0
+        ICMPCODE = 0
+        FROM_DOMAIN = ""
+        TO_DOMAIN = ""
+        GeoIP = ""
+        Priority = "0"
+        Notes = ""
+
+        TCP_Port_function (PROTOCOL, DESTINATIONPORT)
+        IP_Add_function (SOURCEIP)
+        
         print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
     def DB_DF_not_present ():
+        DATE = datetime.date(2018, 12, int(text[1]))
+        TIMESTR = text[2].replace(':',' ').split()
+        HOUR = datetime.time(int(TIMESTR[0]), int(TIMESTR[1]), int(TIMESTR[2]))
+        ACTION = text[7].replace(':','')
+        PROTOCOL = text[18].replace('PROTO=','')
+        SOURCEIP = text[11].replace('SRC=','')
+        SOURCEPORT = text[19].replace('SPT=','')
+        DESTINATIONIP = text[12].replace('DST=','')
+        DESTINATIONPORT = text[20].replace('DPT=','')
+        FLAGS = text[23:]
+        FLAGS_INS = " ".join(FLAGS)
+        ICMPTYPE = 0
+        ICMPCODE = 0
+        FROM_DOMAIN = ""
+        TO_DOMAIN = ""
+        GeoIP = ""
+        Priority = "0"
+        Notes = ""
+
+        TCP_Port_function (PROTOCOL, DESTINATIONPORT)
+        IP_Add_function (SOURCEIP)
+
         print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
     # File Open here
@@ -50,87 +102,27 @@ def main():
         if "TCP" in line:
             TCP_counter += 1
             # TCP - no DF
-            if not "DF" in line:
-                DATE = datetime.date(2018, 12, int(text[1]))
-                TIMESTR = text[2].replace(':',' ').split()
-                HOUR = datetime.time(int(TIMESTR[0]), int(TIMESTR[1]), int(TIMESTR[2]))
-                ACTION = text[7].replace(':','')
-                PROTOCOL = text[18].replace('PROTO=','')
-                SOURCEIP = text[11].replace('SRC=','')
-                SOURCEPORT = text[19].replace('SPT=','')
-                DESTINATIONIP = text[12].replace('DST=','')
-                DESTINATIONPORT = text[20].replace('DPT=','')
-                FLAGS = text[23:]
-                FLAGS_INS = " ".join(FLAGS)
-                ICMPTYPE = 0
-                ICMPCODE = 0
-                FROM_DOMAIN = ""
-                TO_DOMAIN = ""
-                GeoIP = ""
-                Priority = "0"
-                Notes = ""
-
-                Port_function (PROTOCOL, DESTINATIONPORT)
-
-                print PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
+            if not "DF" in line:         
+                DB_DF_not_present ()
+                # print PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
             # TCP - DF
             else:
-                DATE = datetime.date(2018, 12, int(text[1]))
-                TIMESTR = text[2].replace(':',' ').split()
-                HOUR = datetime.time(int(TIMESTR[0]), int(TIMESTR[1]), int(TIMESTR[2]))
-                ACTION = text[7].replace(':','')
-                PROTOCOL = text[19].replace('PROTO=','')
-                SOURCEIP = text[11].replace('SRC=','')
-                SOURCEPORT = text[20].replace('SPT=','')
-                DESTINATIONIP = text[12].replace('DST=','')
-                DESTINATIONPORT = text[21].replace('DPT=','')
-                FLAGS = text[24:]
-                FLAGS_INS = " ".join(FLAGS)
-                ICMPTYPE = 0
-                ICMPCODE = 0
-                FROM_DOMAIN = ""
-                TO_DOMAIN = ""
-                GeoIP = ""
-                Priority = "0"
-                Notes = ""
-        
-                print PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
+                DB_DF_present()        
+                # print PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
         else:
             # Processing for UDP connections here
             if "UDP" in line:    
                 UDP_counter += 1
                 # UDP - No DF
                 if not "DF" in line:
-                    DATE = datetime.date(2018, 12, int(text[1]))
-                    TIMESTR = text[2].replace(':',' ').split()
-                    HOUR = datetime.time(int(TIMESTR[0]), int(TIMESTR[1]), int(TIMESTR[2]))
-                    ACTION = text[7].replace(':','')
-                    PROTOCOL = text[18].replace('PROTO=','')
-                    SOURCEIP = text[11].replace('SRC=','')
-                    SOURCEPORT = text[19].replace('SPT=','')
-                    DESTINATIONIP = text[12].replace('DST=','')
-                    DESTINATIONPORT = text[20].replace('DPT=','')
-                    FLAGS = text[21:]
-                    FLAGS_INS = " ".join(FLAGS)
-
-                    print PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
+                    DB_DF_not_present ()
+                    # print PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
                     
                 # UDP - DF
                 else:
-                    DATE = datetime.date(2018, 12, int(text[1]))
-                    TIMESTR = text[2].replace(':',' ').split()
-                    HOUR = datetime.time(int(TIMESTR[0]), int(TIMESTR[1]), int(TIMESTR[2]))
-                    ACTION = text[7].replace(':','')
-                    PROTOCOL = text[19].replace('PROTO=','')
-                    SOURCEIP = text[11].replace('SRC=','')
-                    SOURCEPORT = text[20].replace('SPT=','')
-                    DESTINATIONIP = text[12].replace('DST=','')
-                    DESTINATIONPORT = text[21].replace('DPT=','')
-                    FLAGS = text[22:]
-                    FLAGS_INS = " ".join(FLAGS)
-
-                    print PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
+                    DB_DF_present()
+                    # print PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
             else:
                 # ICMP
