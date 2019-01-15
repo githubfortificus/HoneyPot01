@@ -3,6 +3,8 @@ def main():
     # Modules here
     import MySQLdb
     import datetime
+    import dns.resolver
+    import dns.reversename
 
     # Global variables here
     Total_counter = 0
@@ -20,22 +22,27 @@ def main():
     # mysqldb_cursor = mysqldb.cursor()
 
     # Functions here
+    # This function creates a dictionary with Port - Count 
     def TCP_Port_function (F_Protocol, F_Port):
         Counter = TCP_Ports.get(F_Port, 0)
         Counter += 1
         TCP_Ports.update({F_Port: Counter})
-        # print TCP_Ports[F_Port]
-        # print "The information passed is: ", F_Protocol, F_Port
 
+    # This function Counts the number of occurrences per IP
     def IP_Add_function (F_IP):
         Counter = IP_Addresses.get(F_IP, 0)
         Counter += 1
         IP_Addresses.update({F_IP: Counter})
         # print "Counter for", F_IP, "is:", IP_Addresses[F_IP]
 
+    # This function obtains the domain / owner for the IP address
     def Obtain_Domain (F_IP):
-        print "We would get the domain for IP", F_IP, "here"
+        print "Resolution for IP:", F_IP, "here"
+        qname = dns.reversename.from_address(F_IP)
+        answer = dns.resolver.query(qname, 'PTR')
+        print answer
 
+    # This function updates the database for TCP/UDP with the DF flag present
     def DB_DF_present ():
         DATE = datetime.date(2018, 12, int(text[1]))
         TIMESTR = text[2].replace(':',' ').split()
@@ -58,9 +65,11 @@ def main():
 
         TCP_Port_function (PROTOCOL, DESTINATIONPORT)
         IP_Add_function (SOURCEIP)
+        Obtain_Domain(SOURCEIP)
         
-        print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
+        # print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
+    # This function updates the database for TCP/UDP with the DF flag NOT present
     def DB_DF_not_present ():
         DATE = datetime.date(2018, 12, int(text[1]))
         TIMESTR = text[2].replace(':',' ').split()
@@ -83,8 +92,9 @@ def main():
 
         TCP_Port_function (PROTOCOL, DESTINATIONPORT)
         IP_Add_function (SOURCEIP)
+        Obtain_Domain(SOURCEIP)
 
-        print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
+        # print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
     # File Open here
     Input_file = open("../RAW/data.log", "r")   
@@ -142,7 +152,7 @@ def main():
                     FLAGS = text[22:]
                     FLAGS_INS = " ".join(FLAGS)
 
-                    print PROTOCOL, SOURCEIP,  DESTINATIONIP, ICMPTYPE, ICMPCODE
+                    # print PROTOCOL, SOURCEIP,  DESTINATIONIP, ICMPTYPE, ICMPCODE
                 
                 # Protocol not detected here
                 else:
