@@ -1,10 +1,8 @@
 def main():
-
     # Modules here
     import MySQLdb
     import datetime
-    import dns.resolver
-    import dns.reversename
+    import DNS
 
     # Global variables here
     Total_counter = 0
@@ -15,6 +13,9 @@ def main():
     TCP_Ports = {}
     UDP_Ports = {}
     IP_Addresses = {}
+    ptr_cache = {}
+
+    DNS_SERVER = '8.8.8.8'
 
     # Database connection here
     # Please remember to change your database username and password as this is now Internet facing
@@ -35,12 +36,32 @@ def main():
         IP_Addresses.update({F_IP: Counter})
         # print "Counter for", F_IP, "is:", IP_Addresses[F_IP]
 
-    # This function obtains the domain / owner for the IP address
+    # # This function obtains the domain / owner for the IP address
     def Obtain_Domain (F_IP):
-        print "Resolution for IP:", F_IP, "here"
-        qname = dns.reversename.from_address(F_IP)
-        answer = dns.resolver.query(qname, 'PTR')
-        print answer
+        # print "Resolution for IP:", F_IP, "here"
+        print F_IP
+
+    def get_ptr(address):
+        # check cache.     
+        if ptr_cache.has_key(address):
+            return ptr_cache[address]
+        
+        #reverse fields in IP address for use with in-addr.arpa query
+        fields = address.split('.')
+        fields.reverse()
+        flippedaddr = '.'.join(fields)
+
+        #query DNS
+        d = DNS.DnsRequest(server=DNS_SERVER,timeout=1)
+        try:
+            r = d.req(flippedaddr+'.in-addr.arpa', qtype='PTR')
+            name = r.answers[0]['data']
+            ptr_cache[address] = r[0]
+            return name
+        except:
+            ptr_cache[address] = "UNAVAILABLE"
+            name = "UNAVAILABLE"
+            return name
 
     # This function updates the database for TCP/UDP with the DF flag present
     def DB_DF_present ():
@@ -63,8 +84,10 @@ def main():
         Priority = "0"
         Notes = ""
 
-        TCP_Port_function (PROTOCOL, DESTINATIONPORT)
-        IP_Add_function (SOURCEIP)
+        resolution = get_ptr(SOURCEIP)
+        print resolution
+        TCP_Port_function(PROTOCOL, DESTINATIONPORT)
+        IP_Add_function(SOURCEIP)
         Obtain_Domain(SOURCEIP)
         
         # print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
@@ -90,14 +113,16 @@ def main():
         Priority = "0"
         Notes = ""
 
-        TCP_Port_function (PROTOCOL, DESTINATIONPORT)
-        IP_Add_function (SOURCEIP)
+        resolution = get_ptr(SOURCEIP)
+        print resolution
+        TCP_Port_function(PROTOCOL, DESTINATIONPORT)
+        IP_Add_function(SOURCEIP)
         Obtain_Domain(SOURCEIP)
 
         # print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
     # File Open here
-    Input_file = open("../RAW/data.log", "r")   
+    Input_file = open("../RAW/test.log", "r")   
     Syslog_processed = open("../Apache_Processed/syslog.out", "a+") 
     Apache_Processed = open("../Syslog_Processed/apache.out", "a+")  
     LOG = open("../Log/Parse_syslog.log", "a+")
@@ -105,15 +130,16 @@ def main():
     Summary = open("../Log/Parse_IPtables_Summary.log", "a+")
 
     # Main processing here
-    for line in Input_file:
+    for line in Input_file:    
+        # print Total_counter
         Total_counter += 1
         text = line.split()
-        # Processing for TCP connections here
+        # # Processing for TCP connections here
         if "TCP" in line:
             TCP_counter += 1
             # TCP - no DF
             if not "DF" in line:         
-                DB_DF_not_present ()
+                DB_DF_not_present()
                 # print PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
             # TCP - DF
@@ -126,7 +152,7 @@ def main():
                 UDP_counter += 1
                 # UDP - No DF
                 if not "DF" in line:
-                    DB_DF_not_present ()
+                    DB_DF_not_present()
                     # print PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
                     
                 # UDP - DF
