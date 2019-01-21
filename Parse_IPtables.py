@@ -39,45 +39,17 @@ def main():
 
     # # This function obtains the domain / owner for the IP address
     def Obtain_Domain (F_IP):       
-        # check cache.     
+        # Cache of identified addresses to optimize DNS resolution   
         if ptr_cache.has_key(F_IP):
-            print "Found in cache -", F_IP
             return ptr_cache[F_IP]
         try:
-            address = DNS_check.gethostbyaddr(F_IP)
-            ptr_cache[F_IP] = address
-            print "Main -", address
+            address = DNS_check.gethostbyaddr(F_IP)[0]
+            ptr_cache[F_IP] = address[0]
             return address
         except:
             address = "Unavailable"
             ptr_cache[F_IP] = address
-            print "Exception -", address
             return address
-
-
-    # def get_ptr(address):
-    #     # check cache.     
-    #     if ptr_cache.has_key(address):
-    #         return ptr_cache[address]
-        
-    #     #reverse fields in IP address for use with in-addr.arpa query
-    #     # fields = address.split('.')
-    #     # fields.reverse()
-    #     # flippedaddr = '.'.join(fields)
-
-    #     #query DNS
-    #     d = DNS.DnsRequest(server=DNS_SERVER,timeout=1)
-    #     try:
-    #         print "          Main part chosen"
-    #         r = d.req(address, qtype='PTR')
-    #         name = r.answers[0]['data']
-    #         ptr_cache[address] = r[0]
-    #         return name
-    #     except:
-    #         print "          Failure"
-    #         ptr_cache[address] = "UNAVAILABLE"
-    #         name = "UNAVAILABLE"
-    #         return name
 
     # This function updates the database for TCP/UDP with the DF flag present
     def DB_DF_present ():
@@ -101,6 +73,7 @@ def main():
         Notes = ""
 
         resolution = Obtain_Domain(SOURCEIP)
+        print SOURCEIP, resolution
         TCP_Port_function(PROTOCOL, DESTINATIONPORT)
         IP_Add_function(SOURCEIP)
         Obtain_Domain(SOURCEIP)
@@ -129,6 +102,7 @@ def main():
         Notes = ""
 
         resolution = Obtain_Domain(SOURCEIP)
+        print SOURCEIP, resolution
         TCP_Port_function(PROTOCOL, DESTINATIONPORT)
         IP_Add_function(SOURCEIP)
         Obtain_Domain(SOURCEIP)
