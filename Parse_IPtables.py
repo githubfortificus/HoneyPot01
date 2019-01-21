@@ -10,6 +10,9 @@ def main():
     UDP_counter = 0
     ICMP_counter = 0
     Other_counter = 0
+    global DNS_resolved = 0
+    global DNS_failure = 0
+    Unique_IP = 0
     TCP_Ports = {}
     UDP_Ports = {}
     IP_Addresses = {}
@@ -45,10 +48,12 @@ def main():
         try:
             address = DNS_check.gethostbyaddr(F_IP)[0]
             ptr_cache[F_IP] = address[0]
+            DNS_resolved += 1
             return address
         except:
             address = "Unavailable"
             ptr_cache[F_IP] = address
+            DNS_failure += 1
             return address
 
     # This function updates the database for TCP/UDP with the DF flag present
@@ -110,12 +115,14 @@ def main():
         # print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
     # File Open here
-    Input_file = open("../RAW/test.log", "r")   
+    Input_file = open("../RAW/data.log", "r")   
     Syslog_processed = open("../Apache_Processed/syslog.out", "a+") 
     Apache_Processed = open("../Syslog_Processed/apache.out", "a+")  
     LOG = open("../Log/Parse_syslog.log", "a+")
     Error = open("../Log/Parse_IPtables_error.log", "a+")
     Summary = open("../Log/Parse_IPtables_Summary.log", "a+")
+
+    script_start = datetime.datetime.now()
 
     # Main processing here
     for line in Input_file:    
@@ -179,6 +186,11 @@ def main():
     print "UDP Connections: ", UDP_counter
     print "ICMP Connections: ", ICMP_counter
     print "OTHER Connections: ", Other_counter
+    print "DNS resolved / unresolved", DNS_resolved, "/", DNS_failure
+
+    script_end = datetime.datetime.now()
+
+    print "Script start / end = ", script_start, "/", script_end
 
     # Close files and database connections here
     Input_file.close()
