@@ -2,7 +2,7 @@ def main():
     # Modules here
     import MySQLdb
     import datetime
-    import DNS
+    import socket
 
     # Global variables here
     Total_counter = 0
@@ -15,7 +15,8 @@ def main():
     IP_Addresses = {}
     ptr_cache = {}
 
-    DNS_SERVER = '8.8.8.8'
+    DNS_check = socket
+    DNS_check.setdefaulttimeout(1)
 
     # Database connection here
     # Please remember to change your database username and password as this is now Internet facing
@@ -37,31 +38,46 @@ def main():
         # print "Counter for", F_IP, "is:", IP_Addresses[F_IP]
 
     # # This function obtains the domain / owner for the IP address
-    def Obtain_Domain (F_IP):
-        # print "Resolution for IP:", F_IP, "here"
-        print F_IP
-
-    def get_ptr(address):
+    def Obtain_Domain (F_IP):       
         # check cache.     
-        if ptr_cache.has_key(address):
-            return ptr_cache[address]
-        
-        #reverse fields in IP address for use with in-addr.arpa query
-        fields = address.split('.')
-        fields.reverse()
-        flippedaddr = '.'.join(fields)
-
-        #query DNS
-        d = DNS.DnsRequest(server=DNS_SERVER,timeout=1)
+        if ptr_cache.has_key(F_IP):
+            print "Found in cache -", F_IP
+            return ptr_cache[F_IP]
         try:
-            r = d.req(flippedaddr+'.in-addr.arpa', qtype='PTR')
-            name = r.answers[0]['data']
-            ptr_cache[address] = r[0]
-            return name
+            address = DNS_check.gethostbyaddr(F_IP)
+            ptr_cache[F_IP] = address
+            print "Main -", address
+            return address
         except:
-            ptr_cache[address] = "UNAVAILABLE"
-            name = "UNAVAILABLE"
-            return name
+            address = "Unavailable"
+            ptr_cache[F_IP] = address
+            print "Exception -", address
+            return address
+
+
+    # def get_ptr(address):
+    #     # check cache.     
+    #     if ptr_cache.has_key(address):
+    #         return ptr_cache[address]
+        
+    #     #reverse fields in IP address for use with in-addr.arpa query
+    #     # fields = address.split('.')
+    #     # fields.reverse()
+    #     # flippedaddr = '.'.join(fields)
+
+    #     #query DNS
+    #     d = DNS.DnsRequest(server=DNS_SERVER,timeout=1)
+    #     try:
+    #         print "          Main part chosen"
+    #         r = d.req(address, qtype='PTR')
+    #         name = r.answers[0]['data']
+    #         ptr_cache[address] = r[0]
+    #         return name
+    #     except:
+    #         print "          Failure"
+    #         ptr_cache[address] = "UNAVAILABLE"
+    #         name = "UNAVAILABLE"
+    #         return name
 
     # This function updates the database for TCP/UDP with the DF flag present
     def DB_DF_present ():
@@ -84,8 +100,7 @@ def main():
         Priority = "0"
         Notes = ""
 
-        resolution = get_ptr(SOURCEIP)
-        print resolution
+        resolution = Obtain_Domain(SOURCEIP)
         TCP_Port_function(PROTOCOL, DESTINATIONPORT)
         IP_Add_function(SOURCEIP)
         Obtain_Domain(SOURCEIP)
@@ -113,8 +128,7 @@ def main():
         Priority = "0"
         Notes = ""
 
-        resolution = get_ptr(SOURCEIP)
-        print resolution
+        resolution = Obtain_Domain(SOURCEIP)
         TCP_Port_function(PROTOCOL, DESTINATIONPORT)
         IP_Add_function(SOURCEIP)
         Obtain_Domain(SOURCEIP)
