@@ -1,9 +1,25 @@
-# Modules here
+# This script will open a file created by SYSLOG in the honeypot and will parse the input, create a basic output 
+# and push the data to a MySQL database for PHP processing.
+#
+# This script is to be run either by containers or serverless Cloud offerings (like AWS Lambda)
+#
+# V 0.1 
+# Initial script, simple file parsing
+#
+# V 0.2
+# Introduction to functions
+#
+# V 0.3
+# Logging and basic file processing added
+#
+
+# Needed modules here
 import MySQLdb
 import datetime
 import socket
 
 # Global variables here
+MESSAGE = ""
 Total_counter = 0
 TCP_counter = 0
 UDP_counter = 0
@@ -17,6 +33,7 @@ ptr_cache = {}
 DNS_cache = 0
 DNS_resolved = 0
 
+# Socket variables here
 DNS_check = socket
 DNS_check.setdefaulttimeout(1)
 
@@ -26,12 +43,20 @@ DNS_check.setdefaulttimeout(1)
 # mysqldb_cursor = mysqldb.cursor()
 
 # Functions here
-# This function creates a dictionary with Port - Count 
-def TCP_Port_function (F_Protocol, F_Port):
+# This function creates a dictionary with Port - Count for TCP connections
+def Port_function (F_Protocol, F_Port):
     global TCP_Ports
-    Counter = TCP_Ports.get(F_Port, 0)
-    Counter += 1
-    TCP_Ports.update({F_Port: Counter})
+    global UDP_Ports
+
+    if F_Protocol == "TCP":
+        Counter = TCP_Ports.get(F_Port, 0)
+        Counter += 1
+        TCP_Ports.update({F_Port: Counter})
+    # We asume UDP protocol here since the functions that send us here already checked for it
+    else:
+        Counter = UDP_Ports.get(F_Port, 0)
+        Counter += 1
+        UDP_Ports.update({F_Port: Counter})
 
 # This function Counts the number of occurrences per IP
 def IP_Add_function (F_IP):
@@ -42,7 +67,7 @@ def IP_Add_function (F_IP):
 
 # This function obtains the domain / owner for the IP address
 def Obtain_Domain (F_IP):       
-    # Adding global variable definitions so that they can be modified on the function   
+    # Adding global variable definitions so that they can be modified in the function   
     global DNS_cache
     global DNS_resolved
 
@@ -90,7 +115,7 @@ def DB_DF_present ():
     Notes = ""
 
     resolution = Obtain_Domain(SOURCEIP)
-    TCP_Port_function(PROTOCOL, DESTINATIONPORT)
+    Port_function(PROTOCOL, DESTINATIONPORT)
     IP_Add_function(SOURCEIP)
     
     # print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
@@ -117,15 +142,14 @@ def DB_DF_not_present ():
     Notes = ""
 
     resolution = Obtain_Domain(SOURCEIP)
-    TCP_Port_function(PROTOCOL, DESTINATIONPORT)
+    Port_function(PROTOCOL, DESTINATIONPORT)
     IP_Add_function(SOURCEIP)
 
     # print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
 # File Open here
-Input_file = open("../RAW/test.log", "r")   
-Syslog_processed = open("../Apache_Processed/syslog.out", "a+") 
-Apache_Processed = open("../Syslog_Processed/apache.out", "a+")  
+Input_file = open("../RAW/data.log", "r")   
+Syslog_processed = open("../Syslog_Processed/syslog.out", "a+")  
 LOG = open("../Log/Parse_syslog.log", "a+")
 Error = open("../Log/Parse_IPtables_error.log", "a+")
 Summary = open("../Log/Parse_IPtables_Summary.log", "a+")
@@ -133,6 +157,7 @@ Summary = open("../Log/Parse_IPtables_Summary.log", "a+")
 script_start = datetime.datetime.now()
 
 # Main processing here
+LOG.write("Starting file processing \n")
 for line in Input_file:    
     # print Total_counter
     Total_counter += 1
@@ -196,15 +221,29 @@ print "ICMP Connections: ", ICMP_counter
 print "OTHER Connections: ", Other_counter
 print "DNS resolved / cache", DNS_resolved, "/", DNS_cache
 
+# Here we sort the TCP and UDP dictionaries to see top 10 ports attacked and create the "daily" output
+print "\nTCP port analysis - Ports sorted from most access to least access"
+for key, value in sorted(TCP_Ports.iteritems(), key=lambda (k,v): (v,k), reverse=True):
+    print "%s: %s" % (key, value)
+
+print "\nUDP port analysis - Ports softed from most access to least access"
+for key, value in sorted(UDP_Ports.iteritems(), key=lambda (k,v): (v,k), reverse=True):
+    print "%s: %s" % (key, value)
+
+print "\nIP address analysis - IP addresses sorted from highest number of attacks"
+for key, value in sorted(IP_Addresses.iteritems(), key=lambda (k,v): (v,k), reverse=True):
+    print "%s: %s" % (key, value)
+    
 script_end = datetime.datetime.now()
 
 print "Script start / end = ", script_start, "/", script_end
+
+LOG.write("Finish file processing \n")
 
 # Close files and database connections here
 Input_file.close()
 LOG.close()
 Syslog_processed.close()
-Apache_Processed.close()
 Error.close()
 Summary.close()
 # mysqldb_cursor.close()
