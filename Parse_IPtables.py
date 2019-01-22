@@ -14,9 +14,8 @@ TCP_Ports = {}
 UDP_Ports = {}
 IP_Addresses = {}
 ptr_cache = {}
+DNS_cache = 0
 DNS_resolved = 0
-DNS_not_resolved = 0
-DNS_available = 0
 
 DNS_check = socket
 DNS_check.setdefaulttimeout(1)
@@ -29,46 +28,45 @@ DNS_check.setdefaulttimeout(1)
 # Functions here
 # This function creates a dictionary with Port - Count 
 def TCP_Port_function (F_Protocol, F_Port):
+    global TCP_Ports
     Counter = TCP_Ports.get(F_Port, 0)
     Counter += 1
     TCP_Ports.update({F_Port: Counter})
 
 # This function Counts the number of occurrences per IP
 def IP_Add_function (F_IP):
+    global IP_Addresses
     Counter = IP_Addresses.get(F_IP, 0)
     Counter += 1
     IP_Addresses.update({F_IP: Counter})
-    # print "Counter for", F_IP, "is:", IP_Addresses[F_IP]
 
-# # This function obtains the domain / owner for the IP address
+# This function obtains the domain / owner for the IP address
 def Obtain_Domain (F_IP):       
     # Adding global variable definitions so that they can be modified on the function   
+    global DNS_cache
     global DNS_resolved
-    global DNS_not_resolved
-    global DNS_available
 
     # Cache of identified addresses to optimize DNS resolution
     if ptr_cache.has_key(F_IP):
-        DNS_not_resolved = DNS_not_resolved + 1
+        DNS_cache += 1
         return ptr_cache[F_IP]
-    else:
-        DNS_resolved = DNS_resolved + 1
 
     # Here we check for Internal IP addresses so that we can prevent resolution
-
+    IP = F_IP.split('.')
+    if IP[0] == "172" or IP[0] == "192" or IP[0] == "10":
+        ptr_cache[F_IP] = "Internal Network"
+        return "Internal Network"        
 
     # Here we use the socket module with one second timeout to resolve the hostnames
     try:
         address = DNS_check.gethostbyaddr(F_IP)
         hostname = address[0]
         ptr_cache[F_IP] = hostname
-        DNS_available += 1
+        DNS_resolved += 1
         return hostname
     except:
-        address = "Unavailable"
-        ptr_cache[F_IP] = address
-        # print "     Resolution skipped for some exception..."
-        return address
+        ptr_cache[F_IP] = "Unavailable"
+        return "Unavailable"
 
 # This function updates the database for TCP/UDP with the DF flag present
 def DB_DF_present ():
@@ -92,10 +90,8 @@ def DB_DF_present ():
     Notes = ""
 
     resolution = Obtain_Domain(SOURCEIP)
-    print resolution
     TCP_Port_function(PROTOCOL, DESTINATIONPORT)
     IP_Add_function(SOURCEIP)
-    Obtain_Domain(SOURCEIP)
     
     # print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
@@ -121,10 +117,8 @@ def DB_DF_not_present ():
     Notes = ""
 
     resolution = Obtain_Domain(SOURCEIP)
-    print resolution
     TCP_Port_function(PROTOCOL, DESTINATIONPORT)
     IP_Add_function(SOURCEIP)
-    Obtain_Domain(SOURCEIP)
 
     # print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
@@ -200,8 +194,7 @@ print "TCP Connections: ", TCP_counter
 print "UDP Connections: ", UDP_counter
 print "ICMP Connections: ", ICMP_counter
 print "OTHER Connections: ", Other_counter
-print "DNS resolved / unresolved", DNS_resolved, "/", DNS_not_resolved
-print "DNS available:", DNS_available
+print "DNS resolved / cache", DNS_resolved, "/", DNS_cache
 
 script_end = datetime.datetime.now()
 
