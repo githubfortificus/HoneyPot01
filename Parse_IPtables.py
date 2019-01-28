@@ -115,6 +115,7 @@ def DB_DF_present ():
     Notes = ""
 
     resolution = Obtain_Domain(SOURCEIP)
+    print resolution
     Port_function(PROTOCOL, DESTINATIONPORT)
     IP_Add_function(SOURCEIP)
     
@@ -142,6 +143,7 @@ def DB_DF_not_present ():
     Notes = ""
 
     resolution = Obtain_Domain(SOURCEIP)
+    print resolution
     Port_function(PROTOCOL, DESTINATIONPORT)
     IP_Add_function(SOURCEIP)
 
@@ -163,7 +165,7 @@ for line in Input_file:
     Total_counter += 1
     text = line.split()
     # # Processing for TCP connections here
-    if "TCP" in line:
+    if ("TCP" in line) and not ("ICMP" in line):
         TCP_counter += 1
         # TCP - no DF
         if not "DF" in line:         
@@ -176,7 +178,7 @@ for line in Input_file:
             # print PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
     else:
         # Processing for UDP connections here
-        if "UDP" in line:    
+        if ("UDP" in line) and not ("ICMP" in line):    
             UDP_counter += 1
             # UDP - No DF
             if not "DF" in line:
