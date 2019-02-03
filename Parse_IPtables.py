@@ -12,6 +12,9 @@
 # V 0.3
 # Logging and basic file processing added
 #
+# V 0.4 
+# Feeding data to MySQL database working
+#
 
 # Needed modules here
 import MySQLdb
@@ -39,8 +42,8 @@ DNS_check.setdefaulttimeout(1)
 
 # Database connection here
 # Please remember to change your database username and password as this is now Internet facing
-# mysqldb = MySQLdb.connect (host="172.16.100.129", port=3306, user="syslog", passwd="sys10g01!", db="Syslog")
-# mysqldb_cursor = mysqldb.cursor()
+mysqldb = MySQLdb.connect (host="172.16.122.129", port=3306, user="syslog", passwd="sys10g01!", db="Syslog")
+mysqldb_cursor = mysqldb.cursor()
 
 # Functions here
 # This function creates a dictionary with Port - Count for TCP connections
@@ -114,10 +117,16 @@ def DB_DF_present ():
     Priority = "0"
     Notes = ""
 
-    resolution = Obtain_Domain(SOURCEIP)
-    print resolution
+    # resolution = Obtain_Domain(SOURCEIP)
+    # print resolution
     Port_function(PROTOCOL, DESTINATIONPORT)
     IP_Add_function(SOURCEIP)
+
+    mysqldb_cursor.execute('insert into January (Date, Time, Action, Protocol, SRCIP, SRCP, DSTIP, DSTP, Flags, ICMPTYPE, ICMPCODE, Full_message) \
+        values ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%d", "%d", "%s")' % \
+        (DATE, HOUR, ACTION, PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT, FLAGS_INS, ICMPTYPE, ICMPCODE, line))
+        
+    mysqldb.commit()
     
     # print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
@@ -142,10 +151,16 @@ def DB_DF_not_present ():
     Priority = "0"
     Notes = ""
 
-    resolution = Obtain_Domain(SOURCEIP)
-    print resolution
+    # resolution = Obtain_Domain(SOURCEIP)
+    # print resolution
     Port_function(PROTOCOL, DESTINATIONPORT)
     IP_Add_function(SOURCEIP)
+
+    mysqldb_cursor.execute('insert into January (Date, Time, Action, Protocol, SRCIP, SRCP, DSTIP, DSTP, Flags, ICMPTYPE, ICMPCODE, Full_message) \
+        values ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%d", "%d", "%s")' % \
+        (DATE, HOUR, ACTION, PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT, FLAGS_INS, ICMPTYPE, ICMPCODE, line))
+
+    mysqldb.commit()
 
     # print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
@@ -159,10 +174,11 @@ Summary = open("../Log/Parse_IPtables_Summary.log", "a+")
 script_start = datetime.datetime.now()
 
 # Main processing here
-LOG.write("Starting file processing \n")
+LOG.write("Starting file processing at %s\r\n" % script_start)
 for line in Input_file:    
     # print Total_counter
     Total_counter += 1
+    print Total_counter
     text = line.split()
     # # Processing for TCP connections here
     if ("TCP" in line) and not ("ICMP" in line):
@@ -192,7 +208,7 @@ for line in Input_file:
 
         else:
             # ICMP
-            if "ICMP" in line:
+            if ("ICMP" in line) and not ("DF" in line):
                 ICMP_counter += 1
                 ICMP_counter += 1
                 DATE = text[0] + " " + text[1]
@@ -203,12 +219,19 @@ for line in Input_file:
                 SOURCEPORT = 0
                 DESTINATIONIP = text[12].replace('DST=','')
                 DESTINATIONPORT = 0
-                ICMPTYPE = text[19].replace('TYPE=','') 
-                ICMPCODE = text[20].replace('CODE=','')
+                ICMPTYPE = int(text[19].replace('TYPE=',''))
+                ICMPCODE = int(text[20].replace('CODE=',''))
                 FLAGS = text[22:]
                 FLAGS_INS = " ".join(FLAGS)
 
                 # print PROTOCOL, SOURCEIP,  DESTINATIONIP, ICMPTYPE, ICMPCODE
+                # print line
+
+                mysqldb_cursor.execute('insert into January (Date, Time, Action, Protocol, SRCIP, SRCP, DSTIP, DSTP, Flags, ICMPTYPE, ICMPCODE, Full_message) \
+                    values ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%d", "%d", "%s")' % \
+                    (DATE, HOUR, ACTION, PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT, FLAGS_INS, ICMPTYPE, ICMPCODE, line))
+        
+                mysqldb.commit()
             
             # Protocol not detected here
             else:
@@ -224,17 +247,17 @@ print "OTHER Connections: ", Other_counter
 print "DNS resolved / cache", DNS_resolved, "/", DNS_cache
 
 # Here we sort the TCP and UDP dictionaries to see top 10 ports attacked and create the "daily" output
-print "\nTCP port analysis - Ports sorted from most access to least access"
-for key, value in sorted(TCP_Ports.iteritems(), key=lambda (k,v): (v,k), reverse=True):
-    print "%s: %s" % (key, value)
+# print "\nTCP port analysis - Ports sorted from most access to least access"
+# for key, value in sorted(TCP_Ports.iteritems(), key=lambda (k,v): (v,k), reverse=True):
+#     print "%s: %s" % (key, value)
 
-print "\nUDP port analysis - Ports softed from most access to least access"
-for key, value in sorted(UDP_Ports.iteritems(), key=lambda (k,v): (v,k), reverse=True):
-    print "%s: %s" % (key, value)
+# print "\nUDP port analysis - Ports softed from most access to least access"
+# for key, value in sorted(UDP_Ports.iteritems(), key=lambda (k,v): (v,k), reverse=True):
+#     print "%s: %s" % (key, value)
 
-print "\nIP address analysis - IP addresses sorted from highest number of attacks"
-for key, value in sorted(IP_Addresses.iteritems(), key=lambda (k,v): (v,k), reverse=True):
-    print "%s: %s" % (key, value)
+# print "\nIP address analysis - IP addresses sorted from highest number of attacks"
+# for key, value in sorted(IP_Addresses.iteritems(), key=lambda (k,v): (v,k), reverse=True):
+#     print "%s: %s" % (key, value)
     
 script_end = datetime.datetime.now()
 
