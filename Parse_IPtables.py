@@ -20,6 +20,7 @@
 import MySQLdb
 import datetime
 import socket
+import sys
 
 # Global variables here
 MESSAGE = ""
@@ -98,7 +99,7 @@ def Obtain_Domain (F_IP):
 
 # This function updates the database for TCP/UDP with the DF flag present
 def DB_DF_present ():
-    DATE = datetime.date(2018, 12, int(text[1]))
+    DATE = datetime.date(Year, Month, int(text[1]))
     TIMESTR = text[2].replace(':',' ').split()
     HOUR = datetime.time(int(TIMESTR[0]), int(TIMESTR[1]), int(TIMESTR[2]))
     ACTION = text[7].replace(':','')
@@ -117,8 +118,7 @@ def DB_DF_present ():
     Priority = "0"
     Notes = ""
 
-    # resolution = Obtain_Domain(SOURCEIP)
-    # print resolution
+    resolution = Obtain_Domain(SOURCEIP)
     Port_function(PROTOCOL, DESTINATIONPORT)
     IP_Add_function(SOURCEIP)
 
@@ -127,12 +127,10 @@ def DB_DF_present ():
         (DATE, HOUR, ACTION, PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT, FLAGS_INS, ICMPTYPE, ICMPCODE, line))
         
     mysqldb.commit()
-    
-    # print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
 
 # This function updates the database for TCP/UDP with the DF flag NOT present
 def DB_DF_not_present ():
-    DATE = datetime.date(2018, 12, int(text[1]))
+    DATE = datetime.date(Year, Month, int(text[1]))
     TIMESTR = text[2].replace(':',' ').split()
     HOUR = datetime.time(int(TIMESTR[0]), int(TIMESTR[1]), int(TIMESTR[2]))
     ACTION = text[7].replace(':','')
@@ -151,8 +149,7 @@ def DB_DF_not_present ():
     Priority = "0"
     Notes = ""
 
-    # resolution = Obtain_Domain(SOURCEIP)
-    # print resolution
+    resolution = Obtain_Domain(SOURCEIP)
     Port_function(PROTOCOL, DESTINATIONPORT)
     IP_Add_function(SOURCEIP)
 
@@ -162,23 +159,27 @@ def DB_DF_not_present ():
 
     mysqldb.commit()
 
-    # print "We would insert to the database this information: ", PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT
-
 # File Open here
-Input_file = open("../RAW/data.log", "r")   
-Syslog_processed = open("../Syslog_Processed/syslog.out", "a+")  
+# Here we test to see if a file argument is passed; otherwise, it will use the hard-coded value for data input
+if len(sys.argv) < 2:
+    Input_file = open("../RAW/data.log", "r")   
+else:
+    Input_file = open(sys.argv[1], "r")
+
+# Here we open the log files
 LOG = open("../Log/Parse_syslog.log", "a+")
 Error = open("../Log/Parse_IPtables_error.log", "a+")
 Summary = open("../Log/Parse_IPtables_Summary.log", "a+")
 
 script_start = datetime.datetime.now()
+Year = int(script_start.year)
+Month = int(script_start.month)
 
 # Main processing here
 LOG.write("Starting file processing at %s\r\n" % script_start)
+
 for line in Input_file:    
-    # print Total_counter
     Total_counter += 1
-    print Total_counter
     text = line.split()
     # # Processing for TCP connections here
     if ("TCP" in line) and not ("ICMP" in line):
@@ -211,7 +212,7 @@ for line in Input_file:
             if ("ICMP" in line) and not ("DF" in line):
                 ICMP_counter += 1
                 ICMP_counter += 1
-                DATE = text[0] + " " + text[1]
+                DATE = datetime.date(Year, Month, int(text[1]))
                 HOUR = text[2]
                 ACTION = text[7].replace(':','')
                 PROTOCOL = text[18].replace('PROTO=','')
@@ -236,8 +237,9 @@ for line in Input_file:
             # Protocol not detected here
             else:
                 Other_counter += 1
-
-                print "No protocol detected...  Problem found"
+                Error.write("Error on line: %s\r\rn" % line)
+                
+                # print "No protocol detected...  Problem found"
 
 print "Total number of Connections: ", Total_counter
 print "TCP Connections: ", TCP_counter
@@ -245,6 +247,17 @@ print "UDP Connections: ", UDP_counter
 print "ICMP Connections: ", ICMP_counter
 print "OTHER Connections: ", Other_counter
 print "DNS resolved / cache", DNS_resolved, "/", DNS_cache
+
+
+Summary.write("\r\n\r\n")
+Summary.write("Date: - - - \r\n")
+Summary.write("Total number of Connections: %s\r\n" % Total_counter)
+Summary.write("TCP Connections: %s\r\n" % TCP_counter)
+Summary.write("UDP Connections: %s\r\n" % UDP_counter)
+Summary.write("ICMP Connections: %s\r\n" % ICMP_counter)
+Summary.write("OTHER Connections: %s\r\n" % Other_counter)
+Summary.write("DNS resolved %s\r\n" % DNS_resolved)
+Summary.write("DNS cached %s\r\n" % DNS_cache)
 
 # Here we sort the TCP and UDP dictionaries to see top 10 ports attacked and create the "daily" output
 # print "\nTCP port analysis - Ports sorted from most access to least access"
@@ -263,12 +276,12 @@ script_end = datetime.datetime.now()
 
 print "Script start / end = ", script_start, "/", script_end
 
-LOG.write("Finish file processing \n")
+LOG.write("Finish file processing at %s\r\n" % script_end)
+LOG.write("\r\n")
 
 # Close files and database connections here
 Input_file.close()
 LOG.close()
-Syslog_processed.close()
 Error.close()
 Summary.close()
 # mysqldb_cursor.close()
