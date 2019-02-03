@@ -23,13 +23,11 @@ import socket
 import sys
 
 # Global variables here
-MESSAGE = ""
 Total_counter = 0
 TCP_counter = 0
 UDP_counter = 0
 ICMP_counter = 0
 Other_counter = 0
-Unique_IP = 0
 TCP_Ports = {}
 UDP_Ports = {}
 IP_Addresses = {}
@@ -82,7 +80,7 @@ def Obtain_Domain (F_IP):
 
     # Here we check for Internal IP addresses so that we can prevent resolution
     IP = F_IP.split('.')
-    if IP[0] == "172" or IP[0] == "192" or IP[0] == "10":
+    if IP[0] == "172" or IP[0] == "192" or IP[0] == "10" or IP[0] == "169":
         ptr_cache[F_IP] = "Internal Network"
         return "Internal Network"        
 
@@ -112,20 +110,21 @@ def DB_DF_present ():
     FLAGS_INS = " ".join(FLAGS)
     ICMPTYPE = 0
     ICMPCODE = 0
-    FROM_DOMAIN = ""
+    FROM_DOMAIN = Obtain_Domain(SOURCEIP)
     TO_DOMAIN = ""
     GeoIP = ""
     Priority = "0"
     Notes = ""
 
-    resolution = Obtain_Domain(SOURCEIP)
     Port_function(PROTOCOL, DESTINATIONPORT)
     IP_Add_function(SOURCEIP)
 
-    mysqldb_cursor.execute('insert into January (Date, Time, Action, Protocol, SRCIP, SRCP, DSTIP, DSTP, Flags, ICMPTYPE, ICMPCODE, Full_message) \
-        values ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%d", "%d", "%s")' % \
-        (DATE, HOUR, ACTION, PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT, FLAGS_INS, ICMPTYPE, ICMPCODE, line))
+    mysqldb_cursor.execute('insert into January (Date, Time, Action, Protocol, SRCIP, SRCP, DSTIP, DSTP, Flags, ICMPTYPE, ICMPCODE, FROM_DOMAIN, Full_message) \
+        values ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%d", "%d", "%s", "%s")' % \
+        (DATE, HOUR, ACTION, PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT, FLAGS_INS, ICMPTYPE, ICMPCODE, FROM_DOMAIN, line))
         
+    # print DATE, HOUR, ACTION, PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT, FLAGS_INS, ICMPTYPE, ICMPCODE, FROM_DOMAIN, line
+
     mysqldb.commit()
 
 # This function updates the database for TCP/UDP with the DF flag NOT present
@@ -143,19 +142,20 @@ def DB_DF_not_present ():
     FLAGS_INS = " ".join(FLAGS)
     ICMPTYPE = 0
     ICMPCODE = 0
-    FROM_DOMAIN = ""
+    FROM_DOMAIN = Obtain_Domain(SOURCEIP)
     TO_DOMAIN = ""
     GeoIP = ""
     Priority = "0"
     Notes = ""
 
-    resolution = Obtain_Domain(SOURCEIP)
     Port_function(PROTOCOL, DESTINATIONPORT)
     IP_Add_function(SOURCEIP)
 
-    mysqldb_cursor.execute('insert into January (Date, Time, Action, Protocol, SRCIP, SRCP, DSTIP, DSTP, Flags, ICMPTYPE, ICMPCODE, Full_message) \
-        values ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%d", "%d", "%s")' % \
-        (DATE, HOUR, ACTION, PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT, FLAGS_INS, ICMPTYPE, ICMPCODE, line))
+    mysqldb_cursor.execute('insert into January (Date, Time, Action, Protocol, SRCIP, SRCP, DSTIP, DSTP, Flags, ICMPTYPE, ICMPCODE, FROM_DOMAIN, Full_message) \
+        values ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%d", "%d", "%s", "%s")' % \
+        (DATE, HOUR, ACTION, PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT, FLAGS_INS, ICMPTYPE, ICMPCODE, FROM_DOMAIN, line))
+
+    # print DATE, HOUR, ACTION, PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT, FLAGS_INS, ICMPTYPE, ICMPCODE, FROM_DOMAIN, line
 
     mysqldb.commit()
 
@@ -180,6 +180,7 @@ LOG.write("Starting file processing at %s\r\n" % script_start)
 
 for line in Input_file:    
     Total_counter += 1
+    print Total_counter
     text = line.split()
     # # Processing for TCP connections here
     if ("TCP" in line) and not ("ICMP" in line):
@@ -222,32 +223,22 @@ for line in Input_file:
                 DESTINATIONPORT = 0
                 ICMPTYPE = int(text[19].replace('TYPE=',''))
                 ICMPCODE = int(text[20].replace('CODE=',''))
+                FROM_DOMAIN = Obtain_Domain(SOURCEIP)
                 FLAGS = text[22:]
                 FLAGS_INS = " ".join(FLAGS)
 
-                # print PROTOCOL, SOURCEIP,  DESTINATIONIP, ICMPTYPE, ICMPCODE
-                # print line
+                print DATE, HOUR, ACTION, PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT, FLAGS_INS, ICMPTYPE, ICMPCODE, FROM_DOMAIN, line
+                
+                mysqldb_cursor.execute('insert into January (Date, Time, Action, Protocol, SRCIP, SRCP, DSTIP, DSTP, Flags, ICMPTYPE, ICMPCODE, FROM_DOMAIN, Full_message) \
+                    values ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%d", "%d", "%s", "%s")' % \
+                    (DATE, HOUR, ACTION, PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT, FLAGS_INS, ICMPTYPE, ICMPCODE, FROM_DOMAIN, line))
 
-                mysqldb_cursor.execute('insert into January (Date, Time, Action, Protocol, SRCIP, SRCP, DSTIP, DSTP, Flags, ICMPTYPE, ICMPCODE, Full_message) \
-                    values ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%d", "%d", "%s")' % \
-                    (DATE, HOUR, ACTION, PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT, FLAGS_INS, ICMPTYPE, ICMPCODE, line))
-        
                 mysqldb.commit()
             
             # Protocol not detected here
             else:
                 Other_counter += 1
                 Error.write("Error on line: %s\r\rn" % line)
-                
-                # print "No protocol detected...  Problem found"
-
-print "Total number of Connections: ", Total_counter
-print "TCP Connections: ", TCP_counter
-print "UDP Connections: ", UDP_counter
-print "ICMP Connections: ", ICMP_counter
-print "OTHER Connections: ", Other_counter
-print "DNS resolved / cache", DNS_resolved, "/", DNS_cache
-
 
 Summary.write("\r\n\r\n")
 Summary.write("Date: - - - \r\n")
