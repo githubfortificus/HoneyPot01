@@ -227,7 +227,7 @@ for line in Input_file:
                 FLAGS = text[22:]
                 FLAGS_INS = " ".join(FLAGS)
 
-                print DATE, HOUR, ACTION, PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT, FLAGS_INS, ICMPTYPE, ICMPCODE, FROM_DOMAIN, line
+                # print DATE, HOUR, ACTION, PROTOCOL, SOURCEIP, SOURCEPORT, DESTINATIONIP, DESTINATIONPORT, FLAGS_INS, ICMPTYPE, ICMPCODE, FROM_DOMAIN, line
                 
                 mysqldb_cursor.execute('insert into January (Date, Time, Action, Protocol, SRCIP, SRCP, DSTIP, DSTP, Flags, ICMPTYPE, ICMPCODE, FROM_DOMAIN, Full_message) \
                     values ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%d", "%d", "%s", "%s")' % \
@@ -265,7 +265,7 @@ Summary.write("DNS cached %s\r\n" % DNS_cache)
     
 script_end = datetime.datetime.now()
 
-print "Script start / end = ", script_start, "/", script_end
+print "Script start", script_start, "/ Script end", script_end
 
 LOG.write("Finish file processing at %s\r\n" % script_end)
 LOG.write("\r\n")
