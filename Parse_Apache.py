@@ -5,9 +5,13 @@
 # Needed modules here
 import MySQLdb
 import sys
+import datetime
+
+from time import strptime
 
 # Global variables here
 IP_Addresses = {}
+ptr_cache = {}
 DNS_cache = 0
 DNS_resolved = 0
 ATTACKS = 0
@@ -60,34 +64,41 @@ if len(sys.argv) < 2:
 else:
     file = open(sys.argv[1], "r")
 
+LOG = open("../Log/Parse_Apache.log", "a+")
+
 # Main processing here
 for line in file:
     ATTACKS += 1
+    # print ATTACKS
     text = line.split()
     # print text
     SOURCEIP = text[0]
     DOMAIN = Obtain_Domain(SOURCEIP)
     TIME = text[3].replace('[','')
     DATE = TIME.split(':')[0]
+    DATE = DATE.split('/')
+    MONTH = strptime(DATE[1], '%b').tm_mon
+    DATE = datetime.date(int(DATE[2]), MONTH, int(DATE[0]))
     HOUR = TIME.split(':')[1:]
-    HOUR = ":".join(HOUR)
+    HOUR = datetime.time(int(HOUR[0]), int(HOUR[1]), int(HOUR[2]))
     METHOD = text[5].replace('"','')
     URL = text[6]
     TYPE = text[7].replace('"','')
-    RESPONSE = text[8]
+    try:
+        RESPONSE = int(text[8])
+    except:
+        RESPONSE = 0
     SEP = line.split('"')
     CLIENT = SEP[5]
-    # print SOURCEIP, TIME, DATE, HOUR, METHOD, URL, TYPE, RESPONSE, CLIENT
-    # print SOURCEIP
 
-    mysqldb_cursor.execute('insert into January_Apache (SOURCEIP, DOMAIN, TIME, DATE, METHOD, URL, TYPE, RESPONSE, SEP, CLIENT) \
-        values ("%s", "%s", %s", "%s", "%s", "%s", "%s", "%d", "%s", "%s")' % \
-        (SOURCEIP, DOMAIN, TIME, DATE, METHOD, URL, TYPE, RESPONSE, SEP, CLIENT))
+    # We insert the values into the databaser here.
+    mysqldb_cursor.execute('insert into January_Apache (SOURCEIP, DOMAIN, TIME, DATE, METHOD, URL, TYPE, RESPONSE, CLIENT) \
+        values ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%d", "%s")' % \
+        (SOURCEIP, DOMAIN, HOUR, DATE, METHOD, URL, TYPE, RESPONSE, CLIENT))
 
     mysqldb.commit()
-
-print "Number of attacks: ", ATTACKS
 
 mysqldb_cursor.close()
 
 file.close()
+LOG.close()
