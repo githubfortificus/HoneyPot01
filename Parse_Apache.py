@@ -1,5 +1,7 @@
+# This script parses the standard Apache logs and feeds the data to a MySQL database
 #
-#
+# V 0.1 - 6/27/2019
+# Initial version; DNS resolution had to be removed as it takes too long to execute in python
 #
 
 # Needed modules here
